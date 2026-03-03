@@ -3,145 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>學生會意見平台 - BETA 0.5.4</title>
+    <title>學生會意見平台 - 現代視覺版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { 
             --admin: #e74c3c; --student: #2ecc71; --viewer: #3498db; 
-            --notice-bg: #fffceb; --notice-border: #f59f00; 
+            --bg: #f8f9fa; --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-        body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; margin: 0; color: #333; }
-        nav { background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .container { max-width: 600px; margin: 0 auto; padding: 15px; }
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; transition: 0.3s; }
-        .hidden { display: none !important; }
+        body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; background: var(--bg); margin: 0; color: #333; }
+        nav { background: #fff; color: #2c3e50; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:100; box-shadow: 0 1px 10px rgba(0,0,0,0.05); }
+        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
         
-        /* 輸入元件 */
-        textarea, select { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; margin-bottom: 12px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        textarea:focus { border-color: var(--student); box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1); }
+        /* 搜尋列與分類 (對齊截圖樣式) */
+        .search-container { background: white; border-radius: 30px; padding: 5px 20px; display: flex; align-items: center; box-shadow: var(--card-shadow); margin-bottom: 20px; border: 1px solid #eee; }
+        .search-container input { border: none; padding: 12px; outline: none; flex-grow: 1; font-size: 16px; background: transparent; }
         
-        /* 按鈕樣式 */
-        .btn { padding: 14px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn:active { transform: scale(0.96); opacity: 0.8; }
-        
-        /* 意見卡片 */
-        .feedback-card { background: #fff; border-left: 5px solid var(--student); padding: 18px; border-radius: 15px; margin-bottom: 15px; position: relative; animation: slideIn 0.4s ease-out; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* 點讚按鈕 */
-        .like-btn { border: 1.5px solid #f0f0f0; padding: 6px 16px; border-radius: 20px; cursor: pointer; background: #fff; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; transition: 0.2s; }
-        .like-btn.active { background: #fff0f6; border-color: #ffc1d6; color: #e91e63; transform: scale(1.05); }
+        .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .filter-btn { padding: 8px 20px; border-radius: 20px; border: 1px solid #ddd; background: white; cursor: pointer; white-space: nowrap; transition: 0.2s; color: #666; font-weight: 500; }
+        .filter-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
 
+        /* 意見卡片樣式 */
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: var(--card-shadow); margin-bottom: 20px; }
+        .feedback-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .tag { font-size: 0.75rem; background: #f0f2f5; padding: 4px 12px; border-radius: 8px; color: #555; font-weight: bold; margin-bottom: 12px; display: inline-block; }
+        
+        /* 按鈕優化 */
+        .btn { padding: 12px 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        textarea, select { width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 15px; margin-bottom: 15px; font-size: 16px; background: #fafafa; }
+        
         /* 載入遮罩 */
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--viewer); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="loading" class="loading-overlay">
-    <div class="spinner"></div>
-    <p style="margin-top: 15px; color: #666; font-weight: 500;">同步雲端資料庫...</p>
+    <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--viewer); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="margin-top: 15px; color: #666;">同步資料中...</p>
 </div>
 
 <nav>
-    <div style="font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">🏫 學生會平台</div>
-    <div id="status-tag" style="font-size: 0.7rem; background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 20px; font-weight: bold;">連線中</div>
+    <div style="font-weight: bold; font-size: 1.2rem;">🏫 學生會意見平台</div>
+    <div id="status-tag" style="font-size: 0.8rem; background: #eee; padding: 5px 12px; border-radius: 20px;">連線中</div>
 </nav>
 
 <div class="container">
-    <section id="area-admin" class="card hidden" style="border-top: 5px solid var(--admin)">
-        <h3 style="margin-top:0; color:var(--admin); font-size: 1rem;">⚙️ 管理員工具</h3>
-        <div id="qr-student" style="display: flex; flex-direction: column; align-items: center; gap: 10px; background: #fafafa; padding: 15px; border-radius: 12px;">
-            <div id="qrcode"></div>
-            <span style="font-size: 0.8rem; color: #888;">學生作答 QR Code</span>
-        </div>
-    </section>
-
-    <section id="area-notice" class="notice-box hidden" style="background: var(--notice-bg); border: 1.5px solid var(--notice-border); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-        <div style="font-weight: 900; color: var(--notice-border); margin-bottom: 8px; font-size: 0.9rem;">📢 官方最新公告</div>
-        <div id="latest-notice-content" style="line-height: 1.7; font-size: 1rem;"></div>
-    </section>
-
     <section id="area-vote" class="card hidden">
-        <h3 id="display-title" style="margin-top:0; font-size: 1.1rem; line-height: 1.4;">載入中...</h3>
+        <h3 id="display-title" style="margin-top:0;">載入中...</h3>
         <select id="user-category">
-            <option value="校園餐飲">🍔 校園餐飲</option>
-            <option value="硬體設施">🏗️ 硬體設施</option>
-            <option value="交通停車">🛵 交通停車</option>
-            <option value="社團活動">🎸 社團活動</option>
-            <option value="其他建議">💡 其他建議</option>
+            <option value="生活">🏠 生活</option>
+            <option value="學業">📚 學業</option>
+            <option value="活動">🎉 活動</option>
+            <option value="其他">💡 其他</option>
         </select>
-        <textarea id="user-input" rows="4" placeholder="在這裡寫下您的想法..."></textarea>
-        <button id="submit-btn" class="btn" style="background: var(--student); color:white; width: 100%; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);" onclick="submitFeedback()">提交匿名建議</button>
+        <textarea id="user-input" rows="3" placeholder="輸入您的建議內容..."></textarea>
+        <button id="submit-btn" class="btn" style="background: var(--student); color:white; width: 100%;" onclick="submitFeedback()">提交意見</button>
     </section>
 
-    <div style="margin: 0 0 15px 5px; font-weight: 800; color: #7f8c8d; font-size: 0.9rem;">最新校園意見</div>
+    <div class="search-container">
+        <span>🔍</span>
+        <input type="text" id="search-input" placeholder="搜尋關鍵字 (內容或分類)..." oninput="renderFeedbacks()">
+        <select id="sort-type" onchange="renderFeedbacks()" style="width: auto; margin: 0; padding: 5px; border: none; background: transparent; font-size: 14px;">
+            <option value="new">🆕 最新</option>
+            <option value="hot">🔥 熱門</option>
+        </select>
+    </div>
 
-    <section id="feedback-list"></section>
+    <div class="filter-bar" id="filter-bar">
+        <button class="filter-btn active" onclick="setFilter('全部', this)">全部</button>
+        <button class="filter-btn" onclick="setFilter('生活', this)">生活</button>
+        <button class="filter-btn" onclick="setFilter('學業', this)">學業</button>
+        <button class="filter-btn" onclick="setFilter('活動', this)">活動</button>
+        <button class="filter-btn" onclick="setFilter('其他', this)">其他</button>
+    </div>
+
+    <div id="feedback-list"></div>
 </div>
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbywLsr636RXm4Oz4sKXYg2GIeVBUVIHwrkgLATaF4_EzjcBvlRDAs-py4lTpEqiaDp0/exec";
-    const urlParams = new URLSearchParams(window.location.search);
-    const role = urlParams.get('role') || 'viewer';
-    let currentUrl = window.location.origin + window.location.pathname;
-    let allData = { config: {}, feedbacks: [] };
-
-    async function init() {
-        const tag = document.getElementById('status-tag');
-        if (role === 'admin') {
-            tag.innerText = "ADMIN 模式";
-            tag.style.background = "var(--admin)";
-            document.getElementById('area-admin').classList.remove('hidden');
-            document.getElementById('area-vote').classList.remove('hidden');
-            new QRCode(document.getElementById("qrcode"), { text: currentUrl + "?role=student", width: 140, height: 140 });
-        } else if (role === 'student') {
-            tag.innerText = "作答模式";
-            document.getElementById('area-vote').classList.remove('hidden');
-        } else {
-            tag.innerText = "瀏覽模式";
-        }
-        await fetchData();
-    }
+    const role = new URLSearchParams(window.location.search).get('role') || 'viewer';
+    let allData = { feedbacks: [], config: {} };
+    let currentFilter = "全部";
 
     async function fetchData() {
         document.getElementById('loading').style.display = 'flex';
         try {
-            const response = await fetch(`${GAS_URL}?action=read`);
-            allData = await response.json();
-            applyData();
-        } catch (e) {
-            console.error("Sync Error", e);
-        }
+            const res = await fetch(`${GAS_URL}?action=read`);
+            allData = await res.json();
+            document.getElementById('display-title').innerText = allData.config.title || "收集箱";
+            renderFeedbacks();
+        } catch (e) { console.error(e); }
         document.getElementById('loading').style.display = 'none';
     }
 
-    function applyData() {
-        document.getElementById('display-title').innerText = allData.config.title || "關於校園生活，你有什麼建議嗎？";
-        const notice = allData.config.notice || "";
-        if(notice.trim()) {
-            document.getElementById('latest-notice-content').innerText = notice;
-            document.getElementById('area-notice').classList.remove('hidden');
-        } else {
-            document.getElementById('area-notice').classList.add('hidden');
-        }
+    function setFilter(cat, btn) {
+        currentFilter = cat;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
         renderFeedbacks();
     }
 
     function renderFeedbacks() {
         const list = document.getElementById('feedback-list');
-        list.innerHTML = allData.feedbacks.sort((a,b) => b.id - a.id).map(item => `
-            <div class="feedback-card" id="card-${item.id}">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-size:0.75rem; color:var(--viewer); font-weight:800; background:#ebf5ff; padding:3px 10px; border-radius:10px;"># ${item.category}</span>
-                    <span style="font-size:0.75rem; color:#bbb;">${new Date(item.time).toLocaleDateString()}</span>
-                </div>
-                <div style="margin:12px 0; line-height:1.7; font-size: 1.05rem; white-space: pre-wrap; color:#2c3e50;">${item.text}</div>
-                <div style="display:flex; justify-content:flex-end;">
-                    <button class="like-btn" onclick="toggleLike(${item.id}, this)">
-                        <span>❤</span> <span class="like-count">${item.likes}</span>
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const sort = document.getElementById('sort-type').value;
+
+        let filtered = allData.feedbacks.filter(i => {
+            const matchesCat = currentFilter === "全部" || i.category === currentFilter;
+            const matchesSearch = i.text.toLowerCase().includes(query) || i.category.includes(query);
+            return matchesCat && matchesSearch;
+        });
+
+        sort === 'hot' ? filtered.sort((a,b) => b.likes - a.likes) : filtered.sort((a,b) => b.id - a.id);
+
+        if (filtered.length === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#999; margin-top:30px;">找不到相關的意見內容...</p>`;
+            return;
+        }
+
+        list.innerHTML = filtered.map(item => `
+            <div class="feedback-card">
+                <div class="tag"># ${item.category}</div>
+                <div style="line-height:1.6; color:#2c3e50; margin-bottom:15px;">${item.text}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#999;">
+                    <span>${new Date(item.time).toLocaleDateString()}</span>
+                    <button onclick="toggleLike(${item.id}, this)" style="background:none; border:1px solid #eee; padding:5px 12px; border-radius:15px; cursor:pointer;">
+                        ❤ <span>${item.likes}</span>
                     </button>
                 </div>
             </div>
@@ -151,47 +140,34 @@
     async function submitFeedback() {
         const text = document.getElementById('user-input').value.trim();
         if(!text) return alert("請輸入內容");
-        
         const btn = document.getElementById('submit-btn');
         btn.disabled = true;
-        btn.innerText = "傳送至雲端...";
-
-        const payload = { category: document.getElementById('user-category').value, text: text };
+        
         const params = new URLSearchParams();
         params.append('action', 'submit');
-        params.append('data', JSON.stringify(payload));
+        params.append('data', JSON.stringify({ category: document.getElementById('user-category').value, text: text }));
 
         try {
             await fetch(`${GAS_URL}?${params.toString()}`, { mode: 'no-cors' });
             document.getElementById('user-input').value = "";
-            alert("提交成功！感謝您的寶貴意見。");
-            await fetchData();
-            // 提交後捲動到頂部
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (e) {
-            alert("提交失敗");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "提交匿名建議";
-        }
+            alert("提交成功！");
+            setTimeout(fetchData, 1500);
+        } catch (e) { alert("提交失敗"); }
+        btn.disabled = false;
     }
 
     async function toggleLike(id, btn) {
-        // Optimistic UI: 點下去直接加，不等伺服器
-        const countSpan = btn.querySelector('.like-count');
-        let currentLikes = parseInt(countSpan.innerText);
-        countSpan.innerText = currentLikes + 1;
-        btn.classList.add('active');
-        btn.onclick = null; // 防止連續點擊
-
-        try {
-            await fetch(`${GAS_URL}?action=like&id=${id}`, { mode: 'no-cors' });
-        } catch (e) {
-            console.error("Like sync failed");
-        }
+        const span = btn.querySelector('span');
+        span.innerText = parseInt(span.innerText) + 1;
+        btn.style.background = "#fff0f6";
+        await fetch(`${GAS_URL}?action=like&id=${id}`, { mode: 'no-cors' });
     }
 
-    init();
+    // 初始化模式
+    if (role === 'admin' || role === 'student') document.getElementById('area-vote').classList.remove('hidden');
+    document.getElementById('status-tag').innerText = role === 'admin' ? "🔴 管理模式" : (role === 'student' ? "🟢 作答模式" : "🔵 瀏覽模式");
+    fetchData();
 </script>
+<style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
 </body>
 </html>
