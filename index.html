@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>學生會意見平台 - 實戰管理版 0.3.1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --admin: #e74c3c; --student: #2ecc71; --viewer: #3498db; --reply-bg: #f8f9fa; --like-color: #e91e63; --excel-green: #217346; --notice-bg: #fff9db; --notice-border: #f59f00; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f5f7f9; margin: 0; padding-bottom: 50px; transition: background 0.3s; }
+        nav { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: 20px auto; padding: 0 20px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .hidden { display: none !important; }
+        
+        /* QR Code 佈局優化 - 解決溢出問題 */
+        .qrcode-section { background: #fcfcfc; border: 1px solid #efefef; padding: 20px; border-radius: 10px; margin-bottom: 25px; }
+        .qrcode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .qr-card { border: 1px solid #eee; padding: 10px; text-align: center; border-radius: 8px; background: white; display: flex; flex-direction: column; align-items: center; }
+        .qr-label { font-weight: bold; margin-bottom: 10px; display: block; font-size: 0.95rem; white-space: nowrap; }
+        .qr-card div img { max-width: 100%; height: auto; } /* 確保圖片不超出 */
+        .qr-download-btn { margin-top: 8px; font-size: 0.75rem; color: var(--viewer); cursor: pointer; border: 1px solid var(--viewer); padding: 2px 6px; border-radius: 4px; background: white; }
+        .qr-download-btn:hover { background: var(--viewer); color: white; }
+
+        /* 公告與編輯器 */
+        .editor-toolbar { display: flex; gap: 5px; margin-bottom: 5px; background: #eee; padding: 5px; border-radius: 4px 4px 0 0; }
+        #notice-editor { border: 1px solid #ddd; border-top: none; padding: 10px; min-height: 80px; background: white; border-radius: 0 0 4px 4px; }
+        .notice-box { background: var(--notice-bg); border: 2px solid var(--notice-border); border-radius: 12px; padding: 20px; margin-bottom: 25px; }
+        
+        /* 歷史公告刪除按鈕 */
+        .history-item { font-size: 0.9rem; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); position: relative; }
+        .del-notice-btn { position: absolute; right: 0; top: 12px; background: none; border: 1px solid #ff8787; color: #ff8787; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .del-notice-btn:hover { background: #ff8787; color: white; }
+
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        textarea, select, input[type="text"], input[type="search"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box; }
+        .feedback-card { background: #fff; border-left: 8px solid var(--student); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; position: relative; }
+    </style>
+</head>
+<body id="main-body">
+
+<nav>
+    <div style="font-size: 1.25rem; font-weight: bold;">🏫 學生會意見平台</div>
+    <div id="status-tag" style="padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; background: rgba(255,255,255,0.2);">身份載入中...</div>
+</nav>
+
+<div class="container">
+    
+    <section id="area-admin" class="card hidden" style="border: 2px solid var(--admin)">
+        <h2 style="color: var(--admin); margin: 0 0 20px 0;">⚙️ 管理員控制台</h2>
+        
+        <div class="qrcode-section">
+            <h3 style="margin: 0; font-size: 1rem;">📲 QR Code 適配下載</h3>
+            <div class="qrcode-grid">
+                <div class="qr-card">
+                    <span class="qr-label" style="color: var(--admin)">管理員</span>
+                    <div id="qr-admin"></div>
+                    <button class="qr-download-btn" onclick="downloadQR('qr-admin', '管理員連結')">下載圖片</button>
+                </div>
+                <div class="qr-card">
+                    <span class="qr-label" style="color: var(--student)">作答者</span>
+                    <div id="qr-student"></div>
+                    <button class="qr-download-btn" onclick="downloadQR('qr-student', '作答者連結')">下載圖片</button>
+                </div>
+                <div class="qr-card">
+                    <span class="qr-label" style="color: var(--viewer)">僅瀏覽</span>
+                    <div id="qr-viewer"></div>
+                    <button class="qr-download-btn" onclick="downloadQR('qr-viewer', '瀏覽連結')">下載圖片</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #ffd8a8; margin-bottom: 20px;">
+            <label><strong>📢 發布新公告：</strong></label>
+            <div class="editor-toolbar" style="margin-top:10px;">
+                <button class="btn" style="padding:2px 8px; font-size:0.8rem;" onclick="execCmd('bold')">B</button>
+                <button class="btn" style="padding:2px 8px; font-size:0.8rem; font-style:italic;" onclick="execCmd('italic')">I</button>
+                <input type="color" onchange="execCmd('foreColor', this.value)" style="width:30px; height:24px; padding:0; border:none; cursor:pointer;">
+            </div>
+            <div id="notice-editor" contenteditable="true"></div>
+            <button class="btn" style="background: var(--admin); color: white; margin-top: 10px;" onclick="addNotice()">發布</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div><label>題目：</label><input type="text" id="input-title"></div>
+            <div><label>分類：</label><input type="text" id="input-categories"></div>
+        </div>
+        <button class="btn" style="background: #333; color: white;" onclick="saveConfig()">儲存設定</button>
+    </section>
+
+    <section id="area-notice" class="notice-box hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="background: var(--notice-border); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">最新公告</span>
+        </div>
+        <div id="latest-notice-content" style="margin-top:10px; line-height: 1.6;"></div>
+        
+        <div id="history-section" class="hidden">
+            <span style="font-size: 0.85rem; color: #d9480f; cursor: pointer; text-decoration: underline; margin-top: 10px; display: inline-block;" onclick="toggleHistory()">檢視所有公告 ▾</span>
+            <div id="history-list" class="hidden" style="margin-top:15px; border-top: 1px dashed #fab005;"></div>
+        </div>
+    </section>
+
+    <section id="area-vote" class="card hidden">
+        <h2 id="display-title" style="margin-top:0;">載入中...</h2>
+        <select id="user-category"></select>
+        <textarea id="user-input" rows="3" placeholder="請輸入建議..."></textarea>
+        <button class="btn" style="background: var(--student); color:white; width: 100%;" onclick="submitFeedback()">提交意見</button>
+    </section>
+
+    <section id="area-display" class="card">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="search" id="search-input" placeholder="🔍 搜尋意見..." oninput="renderFeedbacks()" style="margin-bottom:0;">
+            <select id="sort-type" onchange="renderFeedbacks()" style="width:auto; margin-bottom:0;">
+                <option value="hot">🔥 熱門</option>
+                <option value="new">🆕 最新</option>
+            </select>
+        </div>
+        <div id="feedback-list"></div>
+    </section>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get('role') || 'viewer';
+    const currentUrl = window.location.href.split('?')[0];
+
+    let storageData = JSON.parse(localStorage.getItem('su_feedbacks_v5')) || [];
+    let pageConfig = JSON.parse(localStorage.getItem('su_config_v5')) || {
+        title: "關於校園生活，你有什麼想改善的地方嗎？",
+        bgColor: "#f5f7f9",
+        categories: "生活設施,學業課程,社團活動,其他",
+        notices: [] 
+    };
+
+    function init() {
+        if (role === 'admin') {
+            document.getElementById('status-tag').innerText = "🔴 管理員模式";
+            document.getElementById('area-admin').classList.remove('hidden');
+            document.getElementById('area-vote').classList.remove('hidden');
+            generateQRCodes();
+        } else if (role === 'student') {
+            document.getElementById('status-tag').innerText = "🟢 作答者模式";
+            document.getElementById('area-vote').classList.remove('hidden');
+        } else {
+            document.getElementById('status-tag').innerText = "🔵 僅限瀏覽";
+        }
+        applyConfig();
+        renderNotices();
+        renderFeedbacks();
+    }
+
+    function execCmd(cmd, value = null) { document.execCommand(cmd, false, value); }
+
+    function downloadQR(containerId, name) {
+        const img = document.getElementById(containerId).querySelector('img');
+        if (!img) return;
+        const link = document.createElement('a');
+        link.href = img.src;
+        link.download = `${name}_QRCode.png`;
+        link.click();
+    }
+
+    function addNotice() {
+        const content = document.getElementById('notice-editor').innerHTML.trim();
+        if (content === "" || content === "<br>") return alert("請輸入內容");
+        pageConfig.notices.unshift({ id: Date.now(), content: content, time: new Date().toLocaleString() });
+        localStorage.setItem('su_config_v5', JSON.stringify(pageConfig));
+        document.getElementById('notice-editor').innerHTML = "";
+        renderNotices();
+    }
+
+    // 特定公告刪除功能
+    function deleteNotice(id) {
+        if(!confirm("確定要刪除這條公告嗎？")) return;
+        pageConfig.notices = pageConfig.notices.filter(n => n.id !== id);
+        localStorage.setItem('su_config_v5', JSON.stringify(pageConfig));
+        renderNotices();
+    }
+
+    function renderNotices() {
+        const area = document.getElementById('area-notice');
+        const latestContent = document.getElementById('latest-notice-content');
+        const historyList = document.getElementById('history-list');
+
+        if (pageConfig.notices.length === 0) {
+            area.classList.add('hidden');
+            return;
+        }
+
+        area.classList.remove('hidden');
+        latestContent.innerHTML = pageConfig.notices[0].content;
+
+        document.getElementById('history-section').classList.toggle('hidden', pageConfig.notices.length <= 1);
+        historyList.innerHTML = pageConfig.notices.map(n => `
+            <div class="history-item">
+                <small style="color:#999;">[${n.time}]</small>
+                ${role === 'admin' ? `<button class="del-notice-btn" onclick="deleteNotice(${n.id})">刪除</button>` : ''}
+                <div style="margin-top:5px;">${n.content}</div>
+            </div>
+        `).join('');
+    }
+
+    function toggleHistory() { document.getElementById('history-list').classList.toggle('hidden'); }
+
+    function generateQRCodes() {
+        const qrConfig = { width: 120, height: 120, colorDark: "#2c3e50" };
+        document.getElementById("qr-admin").innerHTML = "";
+        document.getElementById("qr-student").innerHTML = "";
+        document.getElementById("qr-viewer").innerHTML = "";
+        new QRCode(document.getElementById("qr-admin"), { ...qrConfig, text: currentUrl + "?role=admin" });
+        new QRCode(document.getElementById("qr-student"), { ...qrConfig, text: currentUrl + "?role=student" });
+        new QRCode(document.getElementById("qr-viewer"), { ...qrConfig, text: currentUrl + "?role=viewer" });
+    }
+
+    function applyConfig() {
+        document.getElementById('display-title').innerText = pageConfig.title;
+        document.getElementById('input-title').value = pageConfig.title;
+        document.getElementById('input-categories').value = pageConfig.categories;
+        document.getElementById('main-body').style.backgroundColor = pageConfig.bgColor;
+        const select = document.getElementById('user-category');
+        select.innerHTML = pageConfig.categories.split(',').map(c => `<option value="${c.trim()}">${c.trim()}</option>`).join('');
+    }
+
+    function renderFeedbacks() {
+        const list = document.getElementById('feedback-list');
+        const query = document.getElementById('search-input').value.toLowerCase();
+        const sort = document.getElementById('sort-type').value;
+        let filtered = storageData.filter(i => i.text.toLowerCase().includes(query));
+        sort === 'hot' ? filtered.sort((a,b) => (b.likes||0) - (a.likes||0)) : filtered.sort((a,b) => b.id - a.id);
+        list.innerHTML = filtered.map(item => `
+            <div class="feedback-card">
+                ${role === 'admin' ? `<button style="position:absolute; right:10px; top:10px; background:#ff8787; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer;" onclick="deleteItem(${item.id})">×</button>` : ''}
+                <div style="font-size:0.75rem; color:#666; margin-bottom:5px;"># ${item.category}</div>
+                <div style="margin-bottom:15px;">${item.text}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#999; border-top:1px solid #eee; padding-top:10px;">
+                    <span>${item.time}</span>
+                    <span onclick="toggleLike(${item.id})" style="cursor:pointer; background:#fff; border:1px solid #eee; padding:2px 8px; border-radius:15px;">❤ ${item.likes || 0}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function submitFeedback() {
+        const text = document.getElementById('user-input').value.trim();
+        if(!text) return;
+        storageData.push({ id: Date.now(), category: document.getElementById('user-category').value, text: text, likes: 0, time: new Date().toLocaleString() });
+        localStorage.setItem('su_feedbacks_v5', JSON.stringify(storageData));
+        document.getElementById('user-input').value = ""; renderFeedbacks();
+    }
+
+    function toggleLike(id) {
+        const index = storageData.findIndex(i => i.id === id);
+        if(index !== -1) { storageData[index].likes = (storageData[index].likes || 0) + 1; localStorage.setItem('su_feedbacks_v5', JSON.stringify(storageData)); renderFeedbacks(); }
+    }
+
+    function saveConfig() {
+        pageConfig.title = document.getElementById('input-title').value;
+        pageConfig.categories = document.getElementById('input-categories').value;
+        localStorage.setItem('su_config_v5', JSON.stringify(pageConfig));
+        location.reload();
+    }
+
+    function deleteItem(id) { if(confirm("確定刪除這則意見？")) { storageData = storageData.filter(i => i.id !== id); localStorage.setItem('su_feedbacks_v5', JSON.stringify(storageData)); renderFeedbacks(); } }
+
+    init();
+</script>
+</body>
+</html>
