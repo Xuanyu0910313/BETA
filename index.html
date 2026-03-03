@@ -3,44 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>學生會意見平台 - 現代視覺版</title>
+    <title>學生會意見平台 - 旗艦同步版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { 
             --admin: #e74c3c; --student: #2ecc71; --viewer: #3498db; 
-            --bg: #f8f9fa; --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            --bg: #f8f9fa; --notice-bg: #fff5f5; --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
-        body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; background: var(--bg); margin: 0; color: #333; }
-        nav { background: #fff; color: #2c3e50; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:100; box-shadow: 0 1px 10px rgba(0,0,0,0.05); }
-        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        nav { background: #fff; color: #2c3e50; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 100; box-shadow: 0 1px 10px rgba(0,0,0,0.05); }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         
-        /* 搜尋列與分類 (對齊截圖樣式) */
+        /* 管理員控制台樣式 (對齊圖片樣式) */
+        .admin-card { border: 2px solid var(--admin); border-radius: 12px; padding: 25px; background: white; margin-bottom: 25px; }
+        .admin-section { background: var(--notice-bg); border: 1px dashed var(--admin); padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        
+        /* 搜尋列與分類 (對齊圖片樣式) */
         .search-container { background: white; border-radius: 30px; padding: 5px 20px; display: flex; align-items: center; box-shadow: var(--card-shadow); margin-bottom: 20px; border: 1px solid #eee; }
         .search-container input { border: none; padding: 12px; outline: none; flex-grow: 1; font-size: 16px; background: transparent; }
         
         .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
-        .filter-btn { padding: 8px 20px; border-radius: 20px; border: 1px solid #ddd; background: white; cursor: pointer; white-space: nowrap; transition: 0.2s; color: #666; font-weight: 500; }
+        .filter-btn { padding: 8px 20px; border-radius: 20px; border: 1px solid #ddd; background: white; cursor: pointer; white-space: nowrap; transition: 0.2s; color: #666; }
         .filter-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
 
-        /* 意見卡片樣式 */
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: var(--card-shadow); margin-bottom: 20px; }
-        .feedback-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        /* 通用組件 */
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: var(--card-shadow); margin-bottom: 25px; }
+        .feedback-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; position: relative; }
         .tag { font-size: 0.75rem; background: #f0f2f5; padding: 4px 12px; border-radius: 8px; color: #555; font-weight: bold; margin-bottom: 12px; display: inline-block; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+        textarea, select, input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; }
         
-        /* 按鈕優化 */
-        .btn { padding: 12px 20px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        textarea, select { width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 15px; margin-bottom: 15px; font-size: 16px; background: #fafafa; }
-        
-        /* 載入遮罩 */
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
         .hidden { display: none !important; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div id="loading" class="loading-overlay">
     <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--viewer); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <p style="margin-top: 15px; color: #666;">同步資料中...</p>
+    <p style="margin-top: 15px; color: #666;">同步雲端中...</p>
 </div>
 
 <nav>
@@ -49,34 +52,53 @@
 </nav>
 
 <div class="container">
+    <section id="area-admin" class="admin-card hidden">
+        <h2 style="color: var(--admin); margin-top: 0; display: flex; align-items: center; gap: 10px;">⚙️ 管理員控制台</h2>
+        
+        <div class="admin-section">
+            <label><strong>📢 發布重要公告：</strong></label>
+            <textarea id="input-notice" rows="2" placeholder="在此輸入公告內容 (若清空則隱藏公告區) ..."></textarea>
+            <button class="btn" style="background: var(--admin); color: white;" onclick="saveConfig()">更新公告內容</button>
+        </div>
+
+        <div class="admin-grid">
+            <div><label><strong>修改題目：</strong></label><input type="text" id="input-title"></div>
+            <div><label><strong>修改分類：</strong></label><input type="text" id="input-categories" placeholder="請以逗號分隔，例如：生活,學業"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn" style="background: #333; color: white;" onclick="saveConfig()">儲存基本設定</button>
+            <button class="btn" style="background: #217346; color: white;" onclick="exportToCSV()">📊 匯出 CSV</button>
+            <input type="color" id="bg-picker" style="height:40px; width:60px; border-radius:8px; border:1px solid #ddd;">
+        </div>
+        
+        <div id="qr-display" style="margin-top:20px; display:flex; gap:15px; overflow-x:auto; padding-bottom:10px;">
+            <div id="qr-student" style="text-align:center; font-size:12px; background:#f9f9f9; padding:10px; border-radius:8px;"></div>
+        </div>
+    </section>
+
+    <section id="area-notice" class="card hidden" style="background: #fff9db; border: 2px solid #f59f00;">
+        <div style="color: #d9480f; font-weight: bold; margin-bottom: 10px;">📢 學生會公告</div>
+        <div id="notice-content" style="white-space: pre-wrap; line-height: 1.6; color: #444;"></div>
+    </section>
+
     <section id="area-vote" class="card hidden">
-        <h3 id="display-title" style="margin-top:0;">載入中...</h3>
-        <select id="user-category">
-            <option value="生活">🏠 生活</option>
-            <option value="學業">📚 學業</option>
-            <option value="活動">🎉 活動</option>
-            <option value="其他">💡 其他</option>
-        </select>
-        <textarea id="user-input" rows="3" placeholder="輸入您的建議內容..."></textarea>
-        <button id="submit-btn" class="btn" style="background: var(--student); color:white; width: 100%;" onclick="submitFeedback()">提交意見</button>
+        <h3 id="display-title" style="margin-top:0;">學生意見收集箱</h3>
+        <select id="user-category"></select>
+        <textarea id="user-input" rows="3" placeholder="請描述您的建議..."></textarea>
+        <button id="submit-btn" class="btn" style="background: var(--student); color:white; width: 100%; justify-content:center;" onclick="submitFeedback()">提交意見</button>
     </section>
 
     <div class="search-container">
-        <span>🔍</span>
+        <span style="margin-right:10px;">🔍</span>
         <input type="text" id="search-input" placeholder="搜尋關鍵字 (內容或分類)..." oninput="renderFeedbacks()">
-        <select id="sort-type" onchange="renderFeedbacks()" style="width: auto; margin: 0; padding: 5px; border: none; background: transparent; font-size: 14px;">
-            <option value="new">🆕 最新</option>
-            <option value="hot">🔥 熱門</option>
+        <select id="sort-type" onchange="renderFeedbacks()" style="width: auto; margin: 0; border: none; background: transparent; font-weight:bold;">
+            <option value="new">🆕 最新順序</option>
+            <option value="hot">🔥 熱門排序</option>
         </select>
     </div>
 
-    <div class="filter-bar" id="filter-bar">
-        <button class="filter-btn active" onclick="setFilter('全部', this)">全部</button>
-        <button class="filter-btn" onclick="setFilter('生活', this)">生活</button>
-        <button class="filter-btn" onclick="setFilter('學業', this)">學業</button>
-        <button class="filter-btn" onclick="setFilter('活動', this)">活動</button>
-        <button class="filter-btn" onclick="setFilter('其他', this)">其他</button>
-    </div>
+    <div class="filter-bar" id="filter-bar"></div>
 
     <div id="feedback-list"></div>
 </div>
@@ -92,10 +114,37 @@
         try {
             const res = await fetch(`${GAS_URL}?action=read`);
             allData = await res.json();
-            document.getElementById('display-title').innerText = allData.config.title || "收集箱";
-            renderFeedbacks();
+            refreshUI();
         } catch (e) { console.error(e); }
         document.getElementById('loading').style.display = 'none';
+    }
+
+    function refreshUI() {
+        // 更新公告
+        const noticeArea = document.getElementById('area-notice');
+        if (allData.config.notice) {
+            noticeArea.classList.remove('hidden');
+            document.getElementById('notice-content').innerText = allData.config.notice;
+        } else { noticeArea.classList.add('hidden'); }
+
+        // 更新題目與輸入框
+        document.getElementById('display-title').innerText = allData.config.title || "意見收集箱";
+        if(role === 'admin') {
+            document.getElementById('input-title').value = allData.config.title || "";
+            document.getElementById('input-notice').value = allData.config.notice || "";
+            document.getElementById('input-categories').value = allData.config.categories || "";
+        }
+
+        // 更新分類選單與過濾標籤
+        const cats = (allData.config.categories || "生活,學業,活動,其他").split(',').map(c => c.trim());
+        document.getElementById('user-category').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        const filterCats = ["全部", ...cats];
+        document.getElementById('filter-bar').innerHTML = filterCats.map(c => 
+            `<button class="filter-btn ${currentFilter === c ? 'active' : ''}" onclick="setFilter('${c}', this)">${c}</button>`
+        ).join('');
+
+        renderFeedbacks();
     }
 
     function setFilter(cat, btn) {
@@ -112,7 +161,7 @@
 
         let filtered = allData.feedbacks.filter(i => {
             const matchesCat = currentFilter === "全部" || i.category === currentFilter;
-            const matchesSearch = i.text.toLowerCase().includes(query) || i.category.includes(query);
+            const matchesSearch = i.text.toLowerCase().includes(query) || i.category.toLowerCase().includes(query);
             return matchesCat && matchesSearch;
         });
 
@@ -125,16 +174,34 @@
 
         list.innerHTML = filtered.map(item => `
             <div class="feedback-card">
+                ${role === 'admin' ? `<button onclick="deleteItem(${item.id})" style="position:absolute; right:10px; top:10px; border:none; background:#ff4757; color:white; border-radius:50%; width:24px; height:24px; cursor:pointer;">×</button>` : ''}
                 <div class="tag"># ${item.category}</div>
-                <div style="line-height:1.6; color:#2c3e50; margin-bottom:15px;">${item.text}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:#999;">
+                <div style="line-height:1.6; color:#2c3e50; margin-bottom:15px; font-size:1.05rem;">${item.text}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; color:#999;">
                     <span>${new Date(item.time).toLocaleDateString()}</span>
-                    <button onclick="toggleLike(${item.id}, this)" style="background:none; border:1px solid #eee; padding:5px 12px; border-radius:15px; cursor:pointer;">
+                    <button onclick="toggleLike(${item.id}, this)" style="background:white; border:1px solid #eee; padding:5px 15px; border-radius:20px; cursor:pointer; display:flex; align-items:center; gap:5px;">
                         ❤ <span>${item.likes}</span>
                     </button>
                 </div>
             </div>
         `).join('');
+    }
+
+    async function saveConfig() {
+        const config = {
+            title: document.getElementById('input-title').value,
+            notice: document.getElementById('input-notice').value,
+            categories: document.getElementById('input-categories').value
+        };
+        const params = new URLSearchParams();
+        params.append('action', 'updateConfig');
+        params.append('data', JSON.stringify(config));
+        
+        try {
+            await fetch(`${GAS_URL}?${params.toString()}`, { mode: 'no-cors' });
+            alert("基本設定已同步至雲端！");
+            fetchData();
+        } catch (e) { alert("同步失敗"); }
     }
 
     async function submitFeedback() {
@@ -163,11 +230,36 @@
         await fetch(`${GAS_URL}?action=like&id=${id}`, { mode: 'no-cors' });
     }
 
-    // 初始化模式
-    if (role === 'admin' || role === 'student') document.getElementById('area-vote').classList.remove('hidden');
-    document.getElementById('status-tag').innerText = role === 'admin' ? "🔴 管理模式" : (role === 'student' ? "🟢 作答模式" : "🔵 瀏覽模式");
+    async function deleteItem(id) {
+        if(!confirm("確定要刪除這條意見嗎？")) return;
+        await fetch(`${GAS_URL}?action=delete&id=${id}&role=admin`, { mode: 'no-cors' });
+        fetchData();
+    }
+
+    function exportToCSV() {
+        let csvContent = "\uFEFF時間,分類,內容,按讚數\n";
+        allData.feedbacks.forEach(i => {
+            csvContent += `${new Date(i.time).toLocaleString()},${i.category},"${i.text.replace(/"/g,'""')}",${i.likes}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "學生意見匯出.csv";
+        link.click();
+    }
+
+    // 初始化角色
+    if (role === 'admin') {
+        document.getElementById('area-admin').classList.remove('hidden');
+        document.getElementById('status-tag').innerText = "🔴 管理員模式";
+        new QRCode(document.getElementById("qr-student"), { text: window.location.origin + window.location.pathname + "?role=student", width: 100, height: 100 });
+        document.getElementById('qr-student').innerHTML += "<br>學生作答 QR";
+    } else if (role === 'student') {
+        document.getElementById('status-tag').innerText = "🟢 作答者模式";
+    }
+    if (role !== 'viewer') document.getElementById('area-vote').classList.remove('hidden');
+
     fetchData();
 </script>
-<style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
 </body>
 </html>
